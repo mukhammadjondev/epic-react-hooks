@@ -8,26 +8,27 @@ import {
   PokemonInfoFallback,
   fetchPokemon,
 } from '../pokemon'
+import {ErrorBoundary} from 'react-error-boundary'
 
-class ErrorBoundary extends React.Component {
-  state = {error: null}
-  static getDerivedStateFromError(error) {
-    return {error}
-  }
+// class ErrorBoundary extends React.Component {
+//   state = {error: null}
+//   static getDerivedStateFromError(error) {
+//     return {error}
+//   }
 
-  render() {
-    const {error} = this.state
-    if (error) {
-      return <this.props.FallBackComponent error={this.state.error} />
-    }
+//   render() {
+//     const {error} = this.state
+//     if (error) {
+//       return <this.props.FallbackComponent error={error} />
+//     }
 
-    return this.props.children
-  }
-}
+//     return this.props.children
+//   }
+// }
 
 function PokemonInfo({pokemonName}) {
   const [state, setState] = React.useState({
-    status: 'idle',
+    status: pokemonName ? 'pending' : 'idle',
     pokemon: null,
     error: null,
   })
@@ -38,7 +39,7 @@ function PokemonInfo({pokemonName}) {
 
     setState({status: 'pending'})
     fetchPokemon(pokemonName)
-      .then(pokemon => setState({pokemon, status: 'reslved'}))
+      .then(pokemon => setState({pokemon, status: 'resolved'}))
       .catch(error => setState({error, status: 'rejected'}))
   }, [pokemonName])
 
@@ -55,11 +56,12 @@ function PokemonInfo({pokemonName}) {
   throw new Error('This should be impossible')
 }
 
-function FallBackComponent({error}) {
+function ErrorFallback({error, resetErrorBoundary}) {
   return (
     <div role="alert">
       There was an error:{' '}
       <pre style={{whiteSpace: 'normal'}}>{error.message}</pre>
+      <button onClick={resetErrorBoundary}>Try again</button>
     </div>
   )
 }
@@ -76,7 +78,12 @@ function App() {
       <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
       <hr />
       <div className="pokemon-info">
-        <ErrorBoundary FallBackComponent={FallBackComponent}>
+        <ErrorBoundary
+          key={pokemonName}
+          FallbackComponent={ErrorFallback}
+          onReset={() => setPokemonName('')}
+          resetKeys={[pokemonName]}
+        >
           <PokemonInfo pokemonName={pokemonName} />
         </ErrorBoundary>
       </div>
